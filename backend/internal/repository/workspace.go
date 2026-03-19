@@ -58,7 +58,7 @@ func (db *DB) GetUserWorkspaces(ctx context.Context, userID string) ([]domain.Wo
 	}
 	defer rows.Close()
 
-	var workspaces []domain.Workspace
+	workspaces := make([]domain.Workspace, 0)
 	for rows.Next() {
 		var ws domain.Workspace
 		if err := rows.Scan(&ws.ID, &ws.Name, &ws.IconEmoji, &ws.OwnerID, &ws.Settings, &ws.CreatedAt, &ws.UpdatedAt); err != nil {
@@ -96,7 +96,7 @@ func (db *DB) GetWorkspaceMembers(ctx context.Context, workspaceID string) ([]do
 	}
 	defer rows.Close()
 
-	var members []domain.WorkspaceMemberInfo
+	members := make([]domain.WorkspaceMemberInfo, 0)
 	for rows.Next() {
 		var m domain.WorkspaceMemberInfo
 		if err := rows.Scan(&m.WorkspaceID, &m.UserID, &m.Email, &m.DisplayName, &m.AvatarURL, &m.Role, &m.JoinedAt); err != nil {

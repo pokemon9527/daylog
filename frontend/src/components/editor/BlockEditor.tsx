@@ -23,6 +23,35 @@ const BLOCK_TYPES: { type: BlockType; label: string; icon: string }[] = [
   { type: 'canvas', label: '画板', icon: '🎨' },
 ];
 
+// 解析块内容为纯文本
+function getBlockText(block: Block): string {
+  try {
+    const content = JSON.parse(block.content);
+    if (content.rich_text && content.rich_text.length > 0) {
+      return content.rich_text.map((t: any) => t.text?.content || '').join('');
+    }
+  } catch {}
+  return '';
+}
+
+// 获取块的样式类
+function getBlockClass(type: BlockType): string {
+  switch (type) {
+    case 'heading_1':
+      return 'text-3xl font-bold';
+    case 'heading_2':
+      return 'text-2xl font-bold';
+    case 'heading_3':
+      return 'text-xl font-semibold';
+    case 'code':
+      return 'font-mono text-sm bg-gray-900 text-gray-100 p-4 rounded-lg';
+    case 'quote':
+      return 'border-l-4 border-blue-500 pl-4 text-gray-600 italic';
+    default:
+      return '';
+  }
+}
+
 export default function BlockEditor({
   blocks,
   onCreateBlock,
@@ -32,26 +61,41 @@ export default function BlockEditor({
   const [activeBlockId, setActiveBlockId] = useState<string | null>(null);
   const [showToolbar, setShowToolbar] = useState(false);
   const [toolbarBlockId, setToolbarBlockId] = useState<string | null>(null);
-  const editorRef = useRef<HTMLDivElement>(null);
 
-  // 处理块内容变化
-  const handleBlockInput = useCallback(
-    (blockId: string, content: string) => {
-      const block = blocks.find((b) => b.id === blockId);
-      if (block) {
-        const contentObj = {
-          rich_text: [
-            {
-              type: 'text',
-              text: { content },
-              plain_text: content,
-            },
-          ],
-        };
-        onUpdateBlock(blockId, { content: JSON.stringify(contentObj) });
+  // 用 ref 存储块 DOM 元素，避免 dangerouslySetInnerHTML 在重渲染时重置内容
+  const blockRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  // ref 回调：挂载时设置初始内容，后续重渲染不再修改 DOM
+  const setBlockRef = useCallback(
+    (blockId: string, text: string) => (el: HTMLDivElement | null) => {
+      if (el) {
+        blockRefs.current.set(blockId, el);
+        // 仅在挂载时设置内容（el 当前为空）
+        if (!el.textContent && text) {
+          el.textContent = text;
+        }
+      } else {
+        blockRefs.current.delete(blockId);
       }
     },
-    [blocks, onUpdateBlock]
+    []
+  );
+
+  // 保存块内容
+  const handleBlockInput = useCallback(
+    (blockId: string, content: string) => {
+      const contentObj = {
+        rich_text: [
+          {
+            type: 'text',
+            text: { content },
+            plain_text: content,
+          },
+        ],
+      };
+      onUpdateBlock(blockId, { content: JSON.stringify(contentObj) });
+    },
+    [onUpdateBlock]
   );
 
   // 处理 Enter 键创建新块
@@ -74,17 +118,6 @@ export default function BlockEditor({
     [blocks.length, onCreateBlock, onDeleteBlock]
   );
 
-  // 解析块内容为纯文本
-  const getBlockText = (block: Block): string => {
-    try {
-      const content = JSON.parse(block.content);
-      if (content.rich_text && content.rich_text.length > 0) {
-        return content.rich_text.map((t: any) => t.text?.content || '').join('');
-      }
-    } catch {}
-    return '';
-  };
-
   // 创建新块类型
   const handleCreateBlockType = async (type: BlockType) => {
     await onCreateBlock(type, toolbarBlockId || undefined);
@@ -92,31 +125,11 @@ export default function BlockEditor({
     setToolbarBlockId(null);
   };
 
-  // 获取块的样式类
-  const getBlockClass = (type: BlockType): string => {
-    switch (type) {
-      case 'heading_1':
-        return 'text-3xl font-bold';
-      case 'heading_2':
-        return 'text-2xl font-bold';
-      case 'heading_3':
-        return 'text-xl font-semibold';
-      case 'code':
-        return 'font-mono text-sm bg-gray-900 text-gray-100 p-4 rounded-lg';
-      case 'quote':
-        return 'border-l-4 border-blue-500 pl-4 text-gray-600 italic';
-      case 'divider':
-        return '';
-      default:
-        return '';
-    }
-  };
-
   // 排序块
   const sortedBlocks = [...blocks].sort((a, b) => a.sort_order - b.sort_order);
 
   return (
-    <div ref={editorRef} className="space-y-1">
+    <div className="space-y-1">
       {sortedBlocks.map((block) => (
         <div
           key={block.id}
@@ -168,16 +181,17 @@ export default function BlockEditor({
                 }}
               />
               <div
+                ref={setBlockRef(block.id, getBlockText(block))}
                 contentEditable
                 suppressContentEditableWarning
                 className={`flex-1 outline-none min-h-[1.5em] ${getBlockClass(block.block_type)}`}
                 onBlur={(e) => handleBlockInput(block.id, e.currentTarget.textContent || '')}
                 onKeyDown={(e) => handleKeyDown(e, block.id)}
-                dangerouslySetInnerHTML={{ __html: getBlockText(block) }}
               />
             </div>
           ) : (
             <div
+              ref={setBlockRef(block.id, getBlockText(block))}
               contentEditable
               suppressContentEditableWarning
               className={`outline-none min-h-[1.5em] py-1 px-2 -mx-2 rounded hover:bg-gray-50 focus:bg-gray-50 ${getBlockClass(
@@ -186,7 +200,6 @@ export default function BlockEditor({
               data-placeholder={block.block_type === 'paragraph' ? '输入文字，或按 / 查看命令' : ''}
               onBlur={(e) => handleBlockInput(block.id, e.currentTarget.textContent || '')}
               onKeyDown={(e) => handleKeyDown(e, block.id)}
-              dangerouslySetInnerHTML={{ __html: getBlockText(block) }}
             />
           )}
         </div>

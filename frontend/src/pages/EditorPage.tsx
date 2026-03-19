@@ -14,6 +14,7 @@ export default function EditorPage() {
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
+  const [error, setError] = useState('');
   const { currentWorkspace, setCurrentPage } = useAppStore();
 
   useEffect(() => {
@@ -63,15 +64,19 @@ export default function EditorPage() {
   const handleCreateBlock = useCallback(
     async (blockType: string) => {
       if (!id) return;
+      setError('');
       try {
         const { data } = await blockApi.create({
           page_id: id,
           block_type: blockType,
           content: '{}',
+          props: '{}',
         });
         setBlocks((prev) => [...prev, data]);
         return data;
-      } catch (err) {
+      } catch (err: any) {
+        const msg = err.response?.data?.error || '创建块失败';
+        setError(msg);
         console.error('创建块失败:', err);
       }
     },
@@ -80,6 +85,7 @@ export default function EditorPage() {
 
   const handleUpdateBlock = useCallback(
     async (blockId: string, updates: { content?: string; props?: string; block_type?: string }) => {
+      setError('');
       try {
         await blockApi.update(blockId, updates);
         setBlocks((prev) =>
@@ -89,7 +95,9 @@ export default function EditorPage() {
               : b
           )
         );
-      } catch (err) {
+      } catch (err: any) {
+        const msg = err.response?.data?.error || '更新块失败';
+        setError(msg);
         console.error('更新块失败:', err);
       }
     },
@@ -97,10 +105,13 @@ export default function EditorPage() {
   );
 
   const handleDeleteBlock = useCallback(async (blockId: string) => {
+    setError('');
     try {
       await blockApi.delete(blockId);
       setBlocks((prev) => prev.filter((b) => b.id !== blockId));
-    } catch (err) {
+    } catch (err: any) {
+      const msg = err.response?.data?.error || '删除块失败';
+      setError(msg);
       console.error('删除块失败:', err);
     }
   }, []);
@@ -138,6 +149,13 @@ export default function EditorPage() {
               最后编辑：{page?.updated_at ? new Date(page.updated_at).toLocaleString('zh-CN') : '-'}
             </p>
           </div>
+
+          {error && (
+            <div className="mb-4 bg-red-50 text-red-600 p-3 rounded-lg text-sm flex items-center justify-between">
+              <span>{error}</span>
+              <button onClick={() => setError('')} className="text-red-400 hover:text-red-600">✕</button>
+            </div>
+          )}
 
           {/* 块编辑器 */}
           <BlockEditor

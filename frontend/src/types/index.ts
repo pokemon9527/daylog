@@ -25,6 +25,17 @@ export interface Workspace {
   updated_at: string;
 }
 
+// 工作空间成员
+export interface WorkspaceMemberInfo {
+  workspace_id: string;
+  user_id: string;
+  email: string;
+  display_name: string;
+  avatar_url: string | null;
+  role: string;
+  joined_at: string;
+}
+
 // 页面
 export interface Page {
   id: string;

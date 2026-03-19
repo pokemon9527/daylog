@@ -49,7 +49,7 @@ func (db *DB) SearchPages(ctx context.Context, workspaceID, query string) ([]dom
 	}
 	defer rows.Close()
 
-	var results []domain.SearchResult
+	results := make([]domain.SearchResult, 0)
 	for rows.Next() {
 		var r domain.SearchResult
 		if err := rows.Scan(&r.PageID, &r.Title, &r.Preview, &r.Score); err != nil {

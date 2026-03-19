@@ -27,6 +27,14 @@ func (h *BlockHandler) CreateBlock(c *gin.Context) {
 		return
 	}
 
+	// JSONB 字段不能为空字符串，设置默认值
+	if req.Content == "" {
+		req.Content = "{}"
+	}
+	if req.Props == "" {
+		req.Props = "{}"
+	}
+
 	userID := c.GetString("user_id")
 	block := &domain.Block{
 		PageID:        req.PageID,
@@ -142,6 +150,14 @@ func (h *BlockHandler) CreateBatchBlocks(c *gin.Context) {
 	var blocks []domain.Block
 
 	for i, req := range reqs {
+		// JSONB 字段不能为空字符串，设置默认值
+		if req.Content == "" {
+			req.Content = "{}"
+		}
+		if req.Props == "" {
+			req.Props = "{}"
+		}
+
 		block := &domain.Block{
 			PageID:        req.PageID,
 			ParentBlockID: req.ParentBlockID,

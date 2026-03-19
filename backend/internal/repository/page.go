@@ -46,7 +46,7 @@ func (db *DB) GetWorkspacePages(ctx context.Context, workspaceID string) ([]doma
 	}
 	defer rows.Close()
 
-	var pages []domain.Page
+	pages := make([]domain.Page, 0)
 	for rows.Next() {
 		var p domain.Page
 		if err := rows.Scan(&p.ID, &p.WorkspaceID, &p.ParentPageID, &p.Title, &p.IconEmoji, &p.SortOrder,

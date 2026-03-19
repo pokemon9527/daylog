@@ -46,7 +46,7 @@ func (db *DB) GetFilesByPageID(ctx context.Context, pageID string) ([]domain.Fil
 	}
 	defer rows.Close()
 
-	var files []domain.FileAttachment
+	files := make([]domain.FileAttachment, 0)
 	for rows.Next() {
 		var f domain.FileAttachment
 		if err := rows.Scan(&f.ID, &f.WorkspaceID, &f.PageID, &f.Filename, &f.OriginalName, &f.MimeType,

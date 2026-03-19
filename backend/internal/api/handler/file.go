@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"time"
@@ -129,7 +130,7 @@ func (h *FileHandler) DownloadFile(c *gin.Context) {
 	// 设置响应头
 	c.Header("Content-Description", "File Transfer")
 	c.Header("Content-Transfer-Encoding", "binary")
-	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename=%s", file.OriginalName))
+	c.Header("Content-Disposition", fmt.Sprintf("attachment; filename*=UTF-8''%s", url.PathEscape(file.OriginalName)))
 	c.Header("Content-Type", file.MimeType)
 
 	c.File(file.StoragePath)
@@ -167,7 +168,7 @@ func (h *FileHandler) ServeFile(c *gin.Context) {
 	}
 
 	c.Header("Content-Type", file.MimeType)
-	c.Header("Content-Disposition", fmt.Sprintf("inline; filename=%s", file.OriginalName))
+	c.Header("Content-Disposition", fmt.Sprintf("inline; filename*=UTF-8''%s", url.PathEscape(file.OriginalName)))
 	c.Header("Cache-Control", "public, max-age=31536000")
 	c.File(file.StoragePath)
 }

@@ -30,7 +30,7 @@ func (db *DB) GetPagePermissions(ctx context.Context, pageID string) ([]domain.P
 	}
 	defer rows.Close()
 
-	var perms []domain.PagePermissionRecord
+	perms := make([]domain.PagePermissionRecord, 0)
 	for rows.Next() {
 		var p domain.PagePermissionRecord
 		if err := rows.Scan(&p.ID, &p.PageID, &p.UserID, &p.Role, &p.Level, &p.CreatedAt); err != nil {

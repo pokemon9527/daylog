@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { fileApi } from '../../api/client';
 import type { FileAttachment } from '../../types';
@@ -12,6 +12,21 @@ export default function FileUpload({ workspaceId, pageId }: FileUploadProps) {
   const [uploading, setUploading] = useState(false);
   const [files, setFiles] = useState<FileAttachment[]>([]);
   const [error, setError] = useState('');
+
+  // 加载已有文件列表
+  useEffect(() => {
+    if (!pageId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await fileApi.list(pageId);
+        if (!cancelled) setFiles(data || []);
+      } catch (err) {
+        console.error('加载文件列表失败:', err);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [pageId]);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -99,14 +114,12 @@ export default function FileUpload({ workspaceId, pageId }: FileUploadProps) {
                   {formatFileSize(file.file_size)}
                 </p>
               </div>
-              <a
-                href={fileApi.download(file.id)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => fileApi.download(file.id, file.original_name)}
                 className="text-sm text-blue-600 hover:underline"
               >
                 下载
-              </a>
+              </button>
             </div>
           ))}
         </div>

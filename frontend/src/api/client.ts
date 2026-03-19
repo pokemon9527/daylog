@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AuthResponse, Page, Block, FileAttachment, Workspace } from '../types';
+import type { AuthResponse, Page, Block, FileAttachment, Workspace, WorkspaceMemberInfo } from '../types';
 
 const api = axios.create({
   baseURL: '/api/v1',
@@ -89,7 +89,22 @@ export const fileApi = {
     });
   },
 
-  download: (id: string) => `${api.defaults.baseURL}/files/${id}`,
+  download: async (id: string, filename?: string) => {
+    const token = localStorage.getItem('token');
+    const resp = await fetch(`${api.defaults.baseURL}/files/${id}`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!resp.ok) throw new Error('下载失败');
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || 'download';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  },
 
   preview: (id: string) => `${api.defaults.baseURL}/files/${id}/preview`,
 
@@ -110,7 +125,7 @@ export const workspaceApi = {
     api.put(`/workspaces/${id}`, data),
 
   getMembers: (id: string) =>
-    api.get(`/workspaces/${id}/members`),
+    api.get<WorkspaceMemberInfo[]>(`/workspaces/${id}/members`),
 
   addMember: (id: string, data: { email: string; role: string }) =>
     api.post(`/workspaces/${id}/members`, data),

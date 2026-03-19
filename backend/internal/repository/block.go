@@ -31,7 +31,7 @@ func (db *DB) GetBlocksByPageID(ctx context.Context, pageID string) ([]domain.Bl
 	}
 	defer rows.Close()
 
-	var blocks []domain.Block
+	blocks := make([]domain.Block, 0)
 	for rows.Next() {
 		var b domain.Block
 		if err := rows.Scan(&b.ID, &b.PageID, &b.ParentBlockID, &b.BlockType, &b.SortOrder, &b.Content, &b.Props,

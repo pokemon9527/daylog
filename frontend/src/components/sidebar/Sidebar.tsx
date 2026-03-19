@@ -2,13 +2,17 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { pageApi, workspaceApi, searchApi } from '../../api/client';
 import { useAppStore, useAuthStore } from '../../stores';
-import type { Page, Workspace } from '../../types';
+import type { Page, Workspace, WorkspaceMemberInfo } from '../../types';
 
 export default function Sidebar() {
   const [pages, setPages] = useState<Page[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [members, setMembers] = useState<WorkspaceMemberInfo[]>([]);
   const [showWsMenu, setShowWsMenu] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
   const [newWsName, setNewWsName] = useState('');
+  const [newMemberEmail, setNewMemberEmail] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState('member');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ page_id: string; title: string; preview: string }[]>([]);
   const [showSearch, setShowSearch] = useState(false);
@@ -25,6 +29,9 @@ export default function Sidebar() {
   useEffect(() => {
     if (currentWorkspace) {
       loadPages();
+      loadMembers();
+    } else {
+      setMembers([]);
     }
   }, [currentWorkspace]);
 
@@ -49,6 +56,53 @@ export default function Sidebar() {
       setPages(data || []);
     } catch (err) {
       console.error('加载页面列表失败:', err);
+    }
+  };
+
+  const loadMembers = async () => {
+    if (!currentWorkspace) return;
+    try {
+      const { data } = await workspaceApi.getMembers(currentWorkspace.id);
+      setMembers(data || []);
+    } catch (err) {
+      console.error('加载成员失败:', err);
+    }
+  };
+
+  const handleAddMember = async () => {
+    if (!currentWorkspace || !newMemberEmail.trim()) return;
+    try {
+      await workspaceApi.addMember(currentWorkspace.id, {
+        email: newMemberEmail.trim(),
+        role: newMemberRole,
+      });
+      setNewMemberEmail('');
+      setNewMemberRole('member');
+      loadMembers();
+    } catch (err: any) {
+      console.error('添加成员失败:', err);
+      alert(err.response?.data?.error || '添加成员失败');
+    }
+  };
+
+  const handleUpdateRole = async (userId: string, role: string) => {
+    if (!currentWorkspace) return;
+    try {
+      await workspaceApi.updateMemberRole(currentWorkspace.id, userId, { role });
+      setMembers((prev) => prev.map((m) => m.user_id === userId ? { ...m, role } : m));
+    } catch (err: any) {
+      console.error('更新角色失败:', err);
+      alert(err.response?.data?.error || '更新角色失败');
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    if (!currentWorkspace) return;
+    try {
+      await workspaceApi.removeMember(currentWorkspace.id, userId);
+      setMembers((prev) => prev.filter((m) => m.user_id !== userId));
+    } catch (err) {
+      console.error('移除成员失败:', err);
     }
   };
 
@@ -267,6 +321,88 @@ export default function Sidebar() {
           </p>
         )}
       </div>
+
+      {/* 工作空间成员 */}
+      {currentWorkspace && (
+        <div className="border-t border-gray-100">
+          <button
+            onClick={() => setShowMembers(!showMembers)}
+            className="w-full flex items-center justify-between px-4 py-2 text-xs font-medium text-gray-500 hover:bg-gray-50"
+          >
+            <span>成员 ({members.length})</span>
+            <span>{showMembers ? '▲' : '▼'}</span>
+          </button>
+
+          {showMembers && (
+            <div className="px-2 pb-2 max-h-64 overflow-y-auto">
+              {members.map((m) => (
+                <div key={m.user_id} className="flex items-center gap-2 px-2 py-1.5 rounded-md group">
+                  <div className="w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs text-gray-600 font-medium shrink-0">
+                    {m.display_name?.charAt(0) || '?'}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-700 truncate">{m.display_name}</p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {m.role === 'owner' ? '拥有者' : m.role === 'admin' ? '管理员' : m.role === 'member' ? '成员' : '访客'}
+                    </p>
+                  </div>
+                  {m.role !== 'owner' && user?.id === currentWorkspace.owner_id && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 shrink-0">
+                      <select
+                        value={m.role}
+                        onChange={(e) => handleUpdateRole(m.user_id, e.target.value)}
+                        className="text-xs border border-gray-200 rounded px-1 py-0.5 bg-white"
+                      >
+                        <option value="admin">管理员</option>
+                        <option value="member">成员</option>
+                        <option value="guest">访客</option>
+                      </select>
+                      <button
+                        onClick={() => handleRemoveMember(m.user_id)}
+                        className="text-xs text-gray-400 hover:text-red-500 px-1"
+                        title="移除成员"
+                      >
+                        x
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+
+              {/* 邀请成员 */}
+              {user?.id === currentWorkspace.owner_id && (
+                <div className="mt-2 px-1 space-y-1">
+                  <input
+                    type="email"
+                    value={newMemberEmail}
+                    onChange={(e) => setNewMemberEmail(e.target.value)}
+                    placeholder="输入邮箱邀请"
+                    className="w-full px-2 py-1 text-xs border border-gray-200 rounded"
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddMember()}
+                  />
+                  <div className="flex gap-1">
+                    <select
+                      value={newMemberRole}
+                      onChange={(e) => setNewMemberRole(e.target.value)}
+                      className="flex-1 px-2 py-1 text-xs border border-gray-200 rounded bg-white"
+                    >
+                      <option value="member">成员</option>
+                      <option value="admin">管理员</option>
+                      <option value="guest">访客</option>
+                    </select>
+                    <button
+                      onClick={handleAddMember}
+                      className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 shrink-0"
+                    >
+                      邀请
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 底部操作 */}
       <div className="p-3 border-t border-gray-200">
