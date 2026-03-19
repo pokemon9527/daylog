@@ -1,0 +1,28 @@
+# Dependencies
+frontend/node_modules/
+backend/bin/
+
+# Build outputs
+frontend/dist/
+*.exe
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Uploads (local storage)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Go
+backend/tmp/

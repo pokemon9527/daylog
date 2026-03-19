@@ -1,0 +1,12 @@
+DROP TABLE IF EXISTS crdt_updates;
+DROP TABLE IF EXISTS crdt_documents;
+DROP TABLE IF EXISTS page_permissions;
+DROP TYPE IF EXISTS page_permission_level;
+DROP TABLE IF EXISTS file_attachments;
+DROP TABLE IF EXISTS blocks;
+DROP TYPE IF EXISTS block_type;
+DROP TABLE IF EXISTS pages;
+DROP TABLE IF EXISTS workspace_members;
+DROP TYPE IF EXISTS workspace_role;
+DROP TABLE IF EXISTS workspaces;
+DROP TABLE IF EXISTS users;
