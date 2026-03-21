@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { AuthResponse, Page, Block, FileAttachment, Workspace, WorkspaceMemberInfo } from '../types';
+import type { AuthResponse, Page, Block, FileAttachment, Workspace, WorkspaceMemberInfo, InvitationInfo, Notification } from '../types';
 
 const api = axios.create({
   baseURL: '/api/v1',
@@ -68,7 +68,7 @@ export const blockApi = {
 
   get: (id: string) => api.get<Block>(`/blocks/${id}`),
 
-  update: (id: string, data: { block_type?: string; content?: string; props?: string }) =>
+  update: (id: string, data: { block_type?: string; content?: string; props?: string; sort_order?: number }) =>
     api.put(`/blocks/${id}`, data),
 
   delete: (id: string) => api.delete(`/blocks/${id}`),
@@ -106,12 +106,27 @@ export const fileApi = {
     URL.revokeObjectURL(url);
   },
 
+  // 获取预览图片（带认证，返回 blob URL）
+  getPreviewUrl: async (id: string): Promise<string> => {
+    const token = localStorage.getItem('token');
+    const resp = await fetch(`${api.defaults.baseURL}/files/${id}/preview`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+    if (!resp.ok) throw new Error('获取预览失败');
+    const blob = await resp.blob();
+    return URL.createObjectURL(blob);
+  },
+
+  // 获取预览 URL（用于已知可公开访问的资源）
   preview: (id: string) => `${api.defaults.baseURL}/files/${id}/preview`,
 
   list: (pageId: string) =>
     api.get<FileAttachment[]>(`/files?page_id=${pageId}`),
 
   delete: (id: string) => api.delete(`/files/${id}`),
+
+  reorder: (fileIds: string[], sortOrder: number[]) =>
+    api.post('/files/reorder', { file_ids: fileIds, sort_order: sortOrder }),
 };
 
 // 工作空间 API
@@ -145,6 +160,50 @@ export const searchApi = {
     api.get<{ page_id: string; title: string; preview: string; score: number }[]>(
       `/search?q=${encodeURIComponent(query)}&workspace_id=${workspaceId}`
     ),
+};
+
+// 邀请 API
+export const invitationApi = {
+  // 发送邀请
+  create: (workspaceId: string, data: { email: string; role: string }) =>
+    api.post<{ id: string; token: string; status: string }>(
+      `/workspaces/${workspaceId}/invitations`, data
+    ),
+
+  // 获取工作空间的邀请列表
+  list: (workspaceId: string) =>
+    api.get<InvitationInfo[]>(`/workspaces/${workspaceId}/invitations`),
+
+  // 取消邀请
+  cancel: (workspaceId: string, invitationId: string) =>
+    api.delete(`/workspaces/${workspaceId}/invitations/${invitationId}`),
+
+  // 获取邀请详情（通过 token）
+  getByToken: (token: string) =>
+    api.get<InvitationInfo>(`/invitations/${token}`),
+
+  // 接受邀请
+  accept: (token: string) =>
+    api.post(`/invitations/${token}/accept`),
+
+  // 拒绝邀请
+  reject: (token: string) =>
+    api.post(`/invitations/${token}/reject`),
+};
+
+// 通知 API
+export const notificationApi = {
+  // 获取通知列表
+  list: () =>
+    api.get<{ unread_count: number; notifications: Notification[] }>('/notifications'),
+
+  // 标记单个通知为已读
+  markAsRead: (id: string) =>
+    api.put(`/notifications/${id}/read`),
+
+  // 标记所有通知为已读
+  markAllAsRead: () =>
+    api.put('/notifications/read-all'),
 };
 
 // 权限 API

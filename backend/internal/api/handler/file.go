@@ -201,3 +201,24 @@ func (h *FileHandler) DeleteFile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "删除成功"})
 }
+
+// ReorderFiles 重排序文件
+func (h *FileHandler) ReorderFiles(c *gin.Context) {
+	var req domain.ReorderFilesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "请求参数错误: " + err.Error()})
+		return
+	}
+
+	if len(req.FileIDs) != len(req.SortOrder) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "文件ID和排序值数量不匹配"})
+		return
+	}
+
+	if err := h.db.ReorderFiles(c.Request.Context(), req.FileIDs, req.SortOrder); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "排序成功"})
+}

@@ -30,6 +30,10 @@ func SetupRouter(db *repository.DB, cfg *config.Config, hub *ws.Hub) *gin.Engine
 	workspaceHandler := handler.NewWorkspaceHandler(db)
 	permissionHandler := handler.NewPermissionHandler(db)
 	searchHandler := handler.NewSearchHandler(db)
+	publicHandler := handler.NewPublicHandler(db)
+	invitationHandler := handler.NewInvitationHandler(db)
+	notificationHandler := handler.NewNotificationHandler(db)
+	adminHandler := handler.NewAdminHandler(db, cfg)
 
 	// API 路由组
 	api := r.Group("/api/v1")
@@ -39,6 +43,38 @@ func SetupRouter(db *repository.DB, cfg *config.Config, hub *ws.Hub) *gin.Engine
 		{
 			auth.POST("/register", authHandler.Register)
 			auth.POST("/login", authHandler.Login)
+		}
+
+		// 公开页面预览路由（无需认证）
+		public := api.Group("/public")
+		{
+			public.GET("/pages/:id", publicHandler.GetPublicPage)
+			public.GET("/pages/:id/blocks", publicHandler.GetPublicPageBlocks)
+		}
+
+		// 管理员路由（无需用户认证，使用管理员认证）
+		admin := api.Group("/admin")
+		{
+			admin.POST("/login", adminHandler.Login)
+		}
+
+		// 管理员保护路由
+		adminProtected := api.Group("/admin")
+		adminProtected.Use(middleware.AdminAuthMiddleware(cfg))
+		{
+			adminProtected.GET("/stats", adminHandler.GetStats)
+			adminProtected.GET("/users", adminHandler.GetUsers)
+			adminProtected.GET("/users/:id/stats", adminHandler.GetUserStats)
+			adminProtected.PUT("/users/:id/status", adminHandler.UpdateUserStatus)
+			adminProtected.GET("/pages", adminHandler.GetPages)
+			adminProtected.PUT("/pages/:id/hide", adminHandler.HidePage)
+			adminProtected.PUT("/pages/:id/unhide", adminHandler.UnhidePage)
+			adminProtected.GET("/blocks", adminHandler.GetBlocks)
+			adminProtected.PUT("/blocks/:id/hide", adminHandler.HideBlock)
+			adminProtected.PUT("/blocks/:id/unhide", adminHandler.UnhideBlock)
+			adminProtected.GET("/sensitive-words", adminHandler.GetSensitiveWords)
+			adminProtected.POST("/sensitive-words", adminHandler.CreateSensitiveWord)
+			adminProtected.DELETE("/sensitive-words/:id", adminHandler.DeleteSensitiveWord)
 		}
 
 		// 需要认证的路由
@@ -59,6 +95,10 @@ func SetupRouter(db *repository.DB, cfg *config.Config, hub *ws.Hub) *gin.Engine
 				workspaces.POST("/:id/members", workspaceHandler.AddMember)
 				workspaces.PUT("/:id/members/:userId", workspaceHandler.UpdateMemberRole)
 				workspaces.DELETE("/:id/members/:userId", workspaceHandler.RemoveMember)
+				// 邀请
+				workspaces.POST("/:id/invitations", invitationHandler.CreateInvitation)
+				workspaces.GET("/:id/invitations", invitationHandler.GetInvitations)
+				workspaces.DELETE("/:id/invitations/:invitationId", invitationHandler.DeleteInvitation)
 			}
 
 			// 页面
@@ -96,10 +136,27 @@ func SetupRouter(db *repository.DB, cfg *config.Config, hub *ws.Hub) *gin.Engine
 				files.GET("/:id/preview", fileHandler.ServeFile)
 				files.DELETE("/:id", fileHandler.DeleteFile)
 				files.GET("", fileHandler.GetPageFiles)
+				files.POST("/reorder", fileHandler.ReorderFiles)
 			}
 
 			// 搜索
 			protected.GET("/search", searchHandler.Search)
+
+			// 邀请
+			invitations := protected.Group("/invitations")
+			{
+				invitations.GET("/:token", invitationHandler.GetInvitationByToken)
+				invitations.POST("/:token/accept", invitationHandler.AcceptInvitation)
+				invitations.POST("/:token/reject", invitationHandler.RejectInvitation)
+			}
+
+			// 通知
+			notifications := protected.Group("/notifications")
+			{
+				notifications.GET("", notificationHandler.GetNotifications)
+				notifications.PUT("/:id/read", notificationHandler.MarkAsRead)
+				notifications.PUT("/read-all", notificationHandler.MarkAllAsRead)
+			}
 
 			// WebSocket
 			protected.GET("/ws", ws.HandleWebSocket(hub))

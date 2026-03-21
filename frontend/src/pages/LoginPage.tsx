@@ -19,7 +19,7 @@ export default function LoginPage() {
     try {
       const { data } = await authApi.login({ email, password });
       login(data.user, data.token);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.error || '登录失败');
     } finally {

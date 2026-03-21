@@ -80,6 +80,9 @@ const (
 	BlockFile             BlockType = "file"
 	BlockBookmark         BlockType = "bookmark"
 	BlockCanvas           BlockType = "canvas"
+	BlockTable            BlockType = "table"
+	BlockEmbed            BlockType = "embed"
+	BlockMap              BlockType = "map"
 )
 
 // Block 块模型
@@ -109,6 +112,7 @@ type FileAttachment struct {
 	FileSize     int64     `json:"file_size"`
 	StoragePath  string    `json:"storage_path"`
 	UploadedBy   string    `json:"uploaded_by"`
+	SortOrder    float64   `json:"sort_order"`
 	CreatedAt    time.Time `json:"created_at"`
 }
 
@@ -159,11 +163,18 @@ type UpdateBlockRequest struct {
 	BlockType *BlockType `json:"block_type"`
 	Content   *string    `json:"content"`
 	Props     *string    `json:"props"`
+	SortOrder *float64   `json:"sort_order"`
 }
 
 // ReorderBlocksRequest 重排序块请求
 type ReorderBlocksRequest struct {
 	BlockIDs  []string  `json:"block_ids" binding:"required"`
+	SortOrder []float64 `json:"sort_order" binding:"required"`
+}
+
+// ReorderFilesRequest 重排序文件请求
+type ReorderFilesRequest struct {
+	FileIDs   []string  `json:"file_ids" binding:"required"`
 	SortOrder []float64 `json:"sort_order" binding:"required"`
 }
 
@@ -240,4 +251,140 @@ type SearchResult struct {
 	Title   string  `json:"title"`
 	Preview string  `json:"preview"`
 	Score   float64 `json:"score"`
+}
+
+// InvitationStatus 邀请状态
+type InvitationStatus string
+
+const (
+	InvitationPending  InvitationStatus = "pending"
+	InvitationAccepted InvitationStatus = "accepted"
+	InvitationRejected InvitationStatus = "rejected"
+	InvitationExpired  InvitationStatus = "expired"
+)
+
+// WorkspaceInvitation 工作空间邀请
+type WorkspaceInvitation struct {
+	ID           string           `json:"id"`
+	WorkspaceID  string           `json:"workspace_id"`
+	InviterID    string           `json:"inviter_id"`
+	InviteeEmail string           `json:"invitee_email"`
+	InviteeID    *string          `json:"invitee_id"`
+	Role         WorkspaceRole    `json:"role"`
+	Status       InvitationStatus `json:"status"`
+	Token        string           `json:"token"`
+	ExpiresAt    time.Time        `json:"expires_at"`
+	CreatedAt    time.Time        `json:"created_at"`
+}
+
+// WorkspaceInvitationInfo 邀请详情（含关联信息）
+type WorkspaceInvitationInfo struct {
+	ID            string           `json:"id"`
+	WorkspaceID   string           `json:"workspace_id"`
+	WorkspaceName string           `json:"workspace_name"`
+	WorkspaceIcon *string          `json:"workspace_icon"`
+	InviterID     string           `json:"inviter_id"`
+	InviterName   string           `json:"inviter_name"`
+	InviteeEmail  string           `json:"invitee_email"`
+	InviteeID     *string          `json:"invitee_id"`
+	Role          WorkspaceRole    `json:"role"`
+	Status        InvitationStatus `json:"status"`
+	Token         string           `json:"token"`
+	ExpiresAt     time.Time        `json:"expires_at"`
+	CreatedAt     time.Time        `json:"created_at"`
+}
+
+// CreateInvitationRequest 创建邀请请求
+type CreateInvitationRequest struct {
+	Email string        `json:"email" binding:"required,email"`
+	Role  WorkspaceRole `json:"role" binding:"required"`
+}
+
+// Notification 通知
+type Notification struct {
+	ID        string    `json:"id"`
+	UserID    string    `json:"user_id"`
+	Type      string    `json:"type"`
+	Title     string    `json:"title"`
+	Content   *string   `json:"content"`
+	Data      JSONMap   `json:"data"`
+	IsRead    bool      `json:"is_read"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// JSONMap JSON 对象类型
+type JSONMap map[string]interface{}
+
+// Admin 管理员模型
+type Admin struct {
+	ID           string    `json:"id"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"-"`
+	DisplayName  string    `json:"display_name"`
+	Role         string    `json:"role"` // super_admin, admin, moderator
+	IsActive     bool      `json:"is_active"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// AdminLoginRequest 管理员登录请求
+type AdminLoginRequest struct {
+	Username string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+}
+
+// AdminLoginResponse 管理员登录响应
+type AdminLoginResponse struct {
+	Token string `json:"token"`
+	Admin Admin  `json:"admin"`
+}
+
+// ContentReview 内容审核记录
+type ContentReview struct {
+	ID         string     `json:"id"`
+	PageID     *string    `json:"page_id"`
+	BlockID    *string    `json:"block_id"`
+	ReviewerID *string    `json:"reviewer_id"`
+	Status     string     `json:"status"` // pending, approved, rejected, hidden
+	Reason     *string    `json:"reason"`
+	ReviewedAt *time.Time `json:"reviewed_at"`
+	CreatedAt  time.Time  `json:"created_at"`
+}
+
+// ReviewContentRequest 审核内容请求
+type ReviewContentRequest struct {
+	Status string `json:"status" binding:"required"`
+	Reason string `json:"reason"`
+}
+
+// SensitiveWord 敏感词
+type SensitiveWord struct {
+	ID        string    `json:"id"`
+	Word      string    `json:"word"`
+	Level     string    `json:"level"` // warning, block, delete
+	CreatedAt time.Time `json:"created_at"`
+}
+
+// CreateSensitiveWordRequest 创建敏感词请求
+type CreateSensitiveWordRequest struct {
+	Word  string `json:"word" binding:"required"`
+	Level string `json:"level" binding:"required"`
+}
+
+// AdminStats 管理员统计数据
+type AdminStats struct {
+	TotalUsers     int64 `json:"total_users"`
+	TotalPages     int64 `json:"total_pages"`
+	TotalBlocks    int64 `json:"total_blocks"`
+	PendingReviews int64 `json:"pending_reviews"`
+	HiddenPages    int64 `json:"hidden_pages"`
+}
+
+// PageWithReview 带审核状态的页面
+type PageWithReview struct {
+	Page
+	ReviewStatus string `json:"review_status"`
+	IsHidden     bool   `json:"is_hidden"`
+	AuthorName   string `json:"author_name"`
+	AuthorEmail  string `json:"author_email"`
 }

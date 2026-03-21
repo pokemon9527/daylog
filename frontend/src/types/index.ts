@@ -69,7 +69,10 @@ export type BlockType =
   | 'image'
   | 'file'
   | 'bookmark'
-  | 'canvas';
+  | 'canvas'
+  | 'table'
+  | 'embed'
+  | 'map';
 
 // 块
 export interface Block {
@@ -104,4 +107,36 @@ export interface FileAttachment {
 // API 错误响应
 export interface ApiError {
   error: string;
+}
+
+// 邀请状态
+export type InvitationStatus = 'pending' | 'accepted' | 'rejected' | 'expired';
+
+// 邀请信息
+export interface InvitationInfo {
+  id: string;
+  workspace_id: string;
+  workspace_name: string;
+  workspace_icon: string | null;
+  inviter_id: string;
+  inviter_name: string;
+  invitee_email: string;
+  invitee_id: string | null;
+  role: string;
+  status: InvitationStatus;
+  token: string;
+  expires_at: string;
+  created_at: string;
+}
+
+// 通知
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  content: string | null;
+  data: Record<string, any>;
+  is_read: boolean;
+  created_at: string;
 }

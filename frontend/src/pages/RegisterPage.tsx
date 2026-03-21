@@ -24,7 +24,7 @@ export default function RegisterPage() {
         display_name: displayName,
       });
       login(data.user, data.token);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.error || '注册失败');
     } finally {

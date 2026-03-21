@@ -61,8 +61,8 @@ func (db *DB) GetBlockByID(ctx context.Context, id string) (*domain.Block, error
 // UpdateBlock 更新块
 func (db *DB) UpdateBlock(ctx context.Context, id string, req *domain.UpdateBlockRequest, editorID string) error {
 	_, err := db.Pool.Exec(ctx,
-		`UPDATE blocks SET block_type = COALESCE($2, block_type), content = COALESCE($3, content), props = COALESCE($4, props), last_edited_by = $5, updated_at = now() WHERE id = $1`,
-		id, req.BlockType, req.Content, req.Props, editorID,
+		`UPDATE blocks SET block_type = COALESCE($2, block_type), content = COALESCE($3, content), props = COALESCE($4, props), sort_order = COALESCE($5, sort_order), last_edited_by = $6, updated_at = now() WHERE id = $1`,
+		id, req.BlockType, req.Content, req.Props, req.SortOrder, editorID,
 	)
 	if err != nil {
 		return fmt.Errorf("更新块失败: %w", err)
