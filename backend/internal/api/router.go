@@ -94,6 +94,7 @@ func SetupRouter(db *repository.DB, cfg *config.Config, hub *ws.Hub) *gin.Engine
 				files.POST("/upload", fileHandler.UploadFile)
 				files.GET("/:id", fileHandler.DownloadFile)
 				files.GET("/:id/preview", fileHandler.ServeFile)
+				files.DELETE("/:id", fileHandler.DeleteFile)
 				files.GET("", fileHandler.GetPageFiles)
 			}
 

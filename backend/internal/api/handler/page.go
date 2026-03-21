@@ -81,12 +81,13 @@ func (h *PageHandler) UpdatePage(c *gin.Context) {
 	}
 
 	userID := c.GetString("user_id")
-	if err := h.db.UpdatePage(c.Request.Context(), id, &req, userID); err != nil {
+	page, err := h.db.UpdatePage(c.Request.Context(), id, &req, userID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "更新成功"})
+	c.JSON(http.StatusOK, page)
 }
 
 // DeletePage 删除页面

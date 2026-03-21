@@ -59,15 +59,18 @@ func (db *DB) GetWorkspacePages(ctx context.Context, workspaceID string) ([]doma
 }
 
 // UpdatePage 更新页面
-func (db *DB) UpdatePage(ctx context.Context, id string, req *domain.UpdatePageRequest, editorID string) error {
-	_, err := db.Pool.Exec(ctx,
-		`UPDATE pages SET title = COALESCE($2, title), icon_emoji = COALESCE($3, icon_emoji), last_edited_by = $4, updated_at = now() WHERE id = $1`,
+func (db *DB) UpdatePage(ctx context.Context, id string, req *domain.UpdatePageRequest, editorID string) (*domain.Page, error) {
+	page := &domain.Page{}
+	err := db.Pool.QueryRow(ctx,
+		`UPDATE pages SET title = COALESCE($2, title), icon_emoji = COALESCE($3, icon_emoji), last_edited_by = $4, updated_at = now() WHERE id = $1
+		 RETURNING id, workspace_id, parent_page_id, title, icon_emoji, sort_order, is_archived, is_trash, created_by, last_edited_by, created_at, updated_at`,
 		id, req.Title, req.IconEmoji, editorID,
-	)
+	).Scan(&page.ID, &page.WorkspaceID, &page.ParentPageID, &page.Title, &page.IconEmoji, &page.SortOrder,
+		&page.IsArchived, &page.IsTrash, &page.CreatedBy, &page.LastEditedBy, &page.CreatedAt, &page.UpdatedAt)
 	if err != nil {
-		return fmt.Errorf("更新页面失败: %w", err)
+		return nil, fmt.Errorf("更新页面失败: %w", err)
 	}
-	return nil
+	return page, nil
 }
 
 // DeletePage 软删除页面

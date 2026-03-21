@@ -5,7 +5,6 @@ import { useAppStore, useAuthStore } from '../../stores';
 import type { Page, Workspace, WorkspaceMemberInfo } from '../../types';
 
 export default function Sidebar() {
-  const [pages, setPages] = useState<Page[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [members, setMembers] = useState<WorkspaceMemberInfo[]>([]);
   const [showWsMenu, setShowWsMenu] = useState(false);
@@ -17,7 +16,7 @@ export default function Sidebar() {
   const [searchResults, setSearchResults] = useState<{ page_id: string; title: string; preview: string }[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const navigate = useNavigate();
-  const { sidebarOpen, currentWorkspace, currentPage, setCurrentPage, setCurrentWorkspace } = useAppStore();
+  const { sidebarOpen, currentWorkspace, currentPage, pages, setCurrentPage, setCurrentWorkspace, setPages } = useAppStore();
   const { user, logout } = useAuthStore();
 
   // 加载工作空间列表

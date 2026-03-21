@@ -178,3 +178,26 @@ func (h *FileHandler) CleanupExpiredUploads() {
 	_ = time.Now()
 	// TODO: 实现定时清理逻辑
 }
+
+// DeleteFile 删除文件
+func (h *FileHandler) DeleteFile(c *gin.Context) {
+	id := c.Param("id")
+
+	// 先获取文件信息，用于删除物理文件
+	file, err := h.db.GetFileByID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "文件不存在"})
+		return
+	}
+
+	// 删除物理文件（忽略错误，因为文件可能已经不存在）
+	os.Remove(file.StoragePath)
+
+	// 删除数据库记录
+	if err := h.db.DeleteFileAttachment(c.Request.Context(), id); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "删除成功"})
+}

@@ -15,7 +15,7 @@ export default function EditorPage() {
   const [loading, setLoading] = useState(true);
   const [title, setTitle] = useState('');
   const [error, setError] = useState('');
-  const { currentWorkspace, setCurrentPage } = useAppStore();
+  const { currentWorkspace, setCurrentPage, updatePage } = useAppStore();
 
   useEffect(() => {
     if (id) {
@@ -52,13 +52,17 @@ export default function EditorPage() {
       setTitle(newTitle);
       if (id) {
         try {
-          await pageApi.update(id, { title: newTitle });
+          const { data } = await pageApi.update(id, { title: newTitle });
+          // 更新全局状态中的页面列表
+          updatePage(data);
+          // 更新当前页面状态
+          setPage(data);
         } catch (err) {
           console.error('更新标题失败:', err);
         }
       }
     },
-    [id]
+    [id, updatePage]
   );
 
   const handleCreateBlock = useCallback(

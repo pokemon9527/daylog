@@ -64,6 +64,15 @@ export default function FileUpload({ workspaceId, pageId }: FileUploadProps) {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
+  const handleDeleteFile = async (fileId: string) => {
+    try {
+      await fileApi.delete(fileId);
+      setFiles((prev) => prev.filter((f) => f.id !== fileId));
+    } catch (err: any) {
+      setError(err.response?.data?.error || '删除文件失败');
+    }
+  };
+
   return (
     <div className="space-y-4">
       <h3 className="text-sm font-medium text-gray-700">附件</h3>
@@ -119,6 +128,12 @@ export default function FileUpload({ workspaceId, pageId }: FileUploadProps) {
                 className="text-sm text-blue-600 hover:underline"
               >
                 下载
+              </button>
+              <button
+                onClick={() => handleDeleteFile(file.id)}
+                className="text-sm text-red-600 hover:underline"
+              >
+                移除
               </button>
             </div>
           ))}

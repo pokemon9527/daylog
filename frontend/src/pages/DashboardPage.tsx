@@ -6,10 +6,9 @@ import type { Page } from '../types';
 import Sidebar from '../components/sidebar/Sidebar';
 
 export default function DashboardPage() {
-  const [pages, setPages] = useState<Page[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { currentWorkspace, setCurrentPage } = useAppStore();
+  const { currentWorkspace, pages, setCurrentPage, setPages } = useAppStore();
   const user = useAuthStore((s) => s.user);
 
   useEffect(() => {

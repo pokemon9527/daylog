@@ -52,18 +52,29 @@ export const useAuthStore = create<AuthState>((set) => ({
 interface AppState {
   currentWorkspace: Workspace | null;
   currentPage: Page | null;
+  pages: Page[];
   sidebarOpen: boolean;
   setCurrentWorkspace: (ws: Workspace | null) => void;
   setCurrentPage: (page: Page | null) => void;
+  setPages: (pages: Page[] | ((prev: Page[]) => Page[])) => void;
+  updatePage: (page: Page) => void;
   toggleSidebar: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
   currentWorkspace: null,
   currentPage: null,
+  pages: [],
   sidebarOpen: true,
 
   setCurrentWorkspace: (ws) => set({ currentWorkspace: ws }),
   setCurrentPage: (page) => set({ currentPage: page }),
+  setPages: (pages) => set((state) => ({ 
+    pages: typeof pages === 'function' ? pages(state.pages) : pages 
+  })),
+  updatePage: (page) => set((state) => ({
+    pages: state.pages.map((p) => (p.id === page.id ? page : p)),
+    currentPage: state.currentPage?.id === page.id ? page : state.currentPage,
+  })),
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 }));

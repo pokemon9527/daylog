@@ -57,3 +57,15 @@ func (db *DB) GetFilesByPageID(ctx context.Context, pageID string) ([]domain.Fil
 	}
 	return files, nil
 }
+
+// DeleteFileAttachment 删除文件附件记录
+func (db *DB) DeleteFileAttachment(ctx context.Context, id string) error {
+	_, err := db.Pool.Exec(ctx,
+		`DELETE FROM file_attachments WHERE id = $1`,
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("删除文件记录失败: %w", err)
+	}
+	return nil
+}

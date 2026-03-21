@@ -110,6 +110,8 @@ export const fileApi = {
 
   list: (pageId: string) =>
     api.get<FileAttachment[]>(`/files?page_id=${pageId}`),
+
+  delete: (id: string) => api.delete(`/files/${id}`),
 };
 
 // 工作空间 API
